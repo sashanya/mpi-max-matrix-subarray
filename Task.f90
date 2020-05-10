@@ -91,6 +91,7 @@ module Task
     call mpi_finalize(mpiErr)
   end subroutine
 
+
   subroutine FindMaxInArray(A, Summ, Up, Down)
     implicit none
     real(8), intent(in), dimension(:) :: A
