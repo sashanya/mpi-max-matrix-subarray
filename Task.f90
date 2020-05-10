@@ -106,7 +106,7 @@ module Task
     cur_sum = 0
     minus_pos = 0
 
-    do i=1, size(A)
+    do i=1,size(A)
       cur_sum = cur_sum + A(i)
       if (cur_sum > Summ) then
         Summ = cur_sum
