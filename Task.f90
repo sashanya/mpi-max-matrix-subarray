@@ -60,7 +60,7 @@ module Task
     endif
 
     if (mpiRank == 0) then
-      do i=1, mpiSize-1
+      do i=1,mpiSize-1
         call mpi_recv(maxdata, 5, MPI_REAL8, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, status, mpiErr)
 
         if (maxdata(1) > max_sum) then
