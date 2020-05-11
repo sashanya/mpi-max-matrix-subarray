@@ -2,7 +2,7 @@ module Task
   use :: mpi
   implicit none
   contains
-
+ 
   subroutine GetMaxCoordinates(A, x1, y1, x2, y2)
     implicit none
     real(8), intent(in), dimension(:,:) :: A
