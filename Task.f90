@@ -6,15 +6,13 @@ module Task
   subroutine GetMaxCoordinates(A, x1, y1, x2, y2)
     implicit none
     real(8), intent(in), dimension(:,:) :: A
-    real(8), dimension(5) :: maxdata
     real(8), allocatable :: current_column(:)
-    real(8) :: current_sum, max_sum
+    real(8) :: current_sum, max_sum, send_max_sum
+    integer(4), dimension(4) :: send_max_coords
     integer(4), intent(out) :: x1, y1, x2, y2
     integer(4) :: i, n, L, R, Up, Down, m, tmp
     integer(4) :: mpiErr, mpiSize, mpiRank
     integer(4), dimension(MPI_STATUS_SIZE) :: status
-
-    call mpi_init(mpiErr)
 
     call mpi_comm_size(MPI_COMM_WORLD, mpiSize, mpiErr)
     call mpi_comm_rank(MPI_COMM_WORLD, mpiRank, mpiErr)
@@ -51,46 +49,47 @@ module Task
     end do
 
     if (mpiRank /= 0) then
-      maxdata(1) = max_sum
-      maxdata(2) = real(x1, 8)
-      maxdata(3) = real(x2, 8)
-      maxdata(4) = real(y1, 8)
-      maxdata(5) = real(y2, 8)
-      call mpi_send(maxdata, 5, MPI_REAL8, 0, 555, MPI_COMM_WORLD, mpiErr)
+      send_max_sum = max_sum
+      send_max_coords(1) = x1
+      send_max_coords(2) = x2
+      send_max_coords(3) = y1
+      send_max_coords(4) = y2
+      call mpi_send(   send_max_sum, 1, MPI_REAL8,    0, 777+mpiRank, MPI_COMM_WORLD, mpiErr)
+      call mpi_send(send_max_coords, 4, MPI_INTEGER4, 0, 444+mpiRank, MPI_COMM_WORLD, mpiErr)
     endif
 
     if (mpiRank == 0) then
-      do i=1,mpiSize-1
-        call mpi_recv(maxdata, 5, MPI_REAL8, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, status, mpiErr)
+      do i=1, mpiSize-1
+        call mpi_recv(   send_max_sum, 1, MPI_REAL8,    i, 777+i, MPI_COMM_WORLD, status, mpiErr)
+        call mpi_recv(send_max_coords, 4, MPI_INTEGER4, i, 444+i, MPI_COMM_WORLD, status, mpiErr)
 
-        if (maxdata(1) > max_sum) then
-          max_sum = maxdata(1)
-          x1 = int(maxdata(2), 4)
-          x2 = int(maxdata(3), 4)
-          y1 = int(maxdata(4), 4)
-          y2 = int(maxdata(5), 4)
+        if (send_max_sum > max_sum) then
+          max_sum = send_max_sum
+          x1 = send_max_coords(1)
+          x2 = send_max_coords(2)
+          y1 = send_max_coords(3)
+          y2 = send_max_coords(4)
         endif
       enddo
 
-      maxdata(1) = max_sum
-      maxdata(2) = real(x1, 8)
-      maxdata(3) = real(x2, 8)
-      maxdata(4) = real(y1, 8)
-      maxdata(5) = real(y2, 8)
+      send_max_sum = max_sum
+      send_max_coords(1) = x1
+      send_max_coords(2) = x2
+      send_max_coords(3) = y1
+      send_max_coords(4) = y2
     endif
 
-    call mpi_bcast(maxdata, 5, MPI_REAL8, 0, MPI_COMM_WORLD, mpiErr)
+    call mpi_bcast(send_max_sum,    1, MPI_REAL8,    0, MPI_COMM_WORLD, mpiErr)
+    call mpi_bcast(send_max_coords, 4, MPI_INTEGER4, 0, MPI_COMM_WORLD, mpiErr)
 
-    x1 = int(maxdata(2), 4)
-    x2 = int(maxdata(3), 4)
-    y1 = int(maxdata(4), 4)
-    y2 = int(maxdata(5), 4)    
+    max_sum = send_max_sum
+    x1 = send_max_coords(1)
+    x2 = send_max_coords(2)
+    y1 = send_max_coords(3)
+    y2 = send_max_coords(4)
 
-    deallocate(current_column)
-
-    call mpi_finalize(mpiErr)
+   deallocate(current_column)
   end subroutine
-
 
   subroutine FindMaxInArray(A, Summ, Up, Down)
     implicit none
@@ -106,7 +105,7 @@ module Task
     cur_sum = 0
     minus_pos = 0
 
-    do i=1,size(A)
+    do i=1, size(A)
       cur_sum = cur_sum + A(i)
       if (cur_sum > Summ) then
         Summ = cur_sum
