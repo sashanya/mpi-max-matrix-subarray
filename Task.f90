@@ -16,7 +16,7 @@ module Task
 
     call mpi_comm_size(MPI_COMM_WORLD, mpiSize, mpiErr)
     call mpi_comm_rank(MPI_COMM_WORLD, mpiRank, mpiErr)
-    
+     
     m = size(A, dim=1) 
     n = size(A, dim=2) 
 
