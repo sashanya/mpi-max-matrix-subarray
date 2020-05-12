@@ -19,7 +19,7 @@ module Task
     
     m = size(A, dim=1) 
     n = size(A, dim=2) 
- 
+
     allocate(current_column(m))
 
     x1=1
